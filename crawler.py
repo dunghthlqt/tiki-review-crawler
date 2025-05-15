@@ -39,7 +39,7 @@ output_file = 'output.csv'
 try:
     df = pd.read_csv(input_file, encoding='utf-8')
     # Lọc bỏ URL trùng lặp và chuyển thành danh sách
-    urls = list(dict.fromkeys(df['URL'].tolist()))  # Giữ nguyên thứ tự, loại bỏ trùng lặp
+    urls = list(dict.fromkeys(df['URL'].tolist()))
     print(f"Tổng số URL ban đầu: {len(df['URL'])}")
     print(f"Tổng số URL sau khi lọc trùng: {len(urls)}")
 except Exception as e:
@@ -47,6 +47,7 @@ except Exception as e:
     exit()
 
 all_reviews = []
+existing_reviews = set()  # Tập hợp để theo dõi các bộ (rating, cleaned_content) đã tồn tại
 
 LINKS_PER_BREAK = 5
 links_processed = 0
@@ -75,12 +76,18 @@ for url in urls:
             content = review.get('content', 'N/A')
             if rating != 'N/A' and content != 'N/A' and content.strip() != '':
                 cleaned_content = content.replace('\r\n', '. ').replace('\n', '. ').replace('\r', '. ')
-                all_reviews.append({
-                    'Sao': rating,
-                    'Nội dung': cleaned_content
-                })
-                print(f"- Nội dung: {cleaned_content}")
-                print(f"  Sao: {rating}")
+                # Kiểm tra xem cặp (rating, cleaned_content) đã tồn tại chưa
+                review_tuple = (rating, cleaned_content)
+                if review_tuple not in existing_reviews:
+                    all_reviews.append({
+                        'Sao': rating,
+                        'Nội dung': cleaned_content
+                    })
+                    existing_reviews.add(review_tuple)
+                    print(f"- Nội dung: {cleaned_content}")
+                    print(f"  Sao: {rating}")
+                else:
+                    print(f"- Đánh giá trùng lặp bị bỏ qua: {cleaned_content} (Sao: {rating})")
     else:
         print(f"Không có đánh giá nào cho product_id {product_id} hoặc lỗi API.")
     
