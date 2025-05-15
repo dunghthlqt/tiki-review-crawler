@@ -1,0 +1,1 @@
+Thêm toàn bộ link sản phẩm vào file "input.csv" theo dòng ở cột "URL"
