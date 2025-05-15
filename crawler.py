@@ -11,7 +11,7 @@ import os
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
 # Thêm biến để theo dõi thời gian
-start_time = time.time()  # Thời gian bắt đầu chương trình
+start_time = time.time()
 
 def extract_product_id(url):
     match = re.search(r'p(\d+)\.html', url)
@@ -33,25 +33,28 @@ def get_reviews(product_id):
         print(f"Lỗi khi gọi API đánh giá cho product_id {product_id}: {e}")
         return None
 
-input_file = 'input.csv' 
+input_file = 'input.csv'
 output_file = 'output.csv'
 
 try:
     df = pd.read_csv(input_file, encoding='utf-8')
-    urls = df['URL'].tolist()
+    # Lọc bỏ URL trùng lặp và chuyển thành danh sách
+    urls = list(dict.fromkeys(df['URL'].tolist()))  # Giữ nguyên thứ tự, loại bỏ trùng lặp
+    print(f"Tổng số URL ban đầu: {len(df['URL'])}")
+    print(f"Tổng số URL sau khi lọc trùng: {len(urls)}")
 except Exception as e:
     print(f"Lỗi khi đọc file CSV: {e}")
     exit()
 
 all_reviews = []
 
-LINKS_PER_BREAK = 5  # Nghỉ sau mỗi 5 link
+LINKS_PER_BREAK = 5
 links_processed = 0
-total_urls = len(urls)  # Tổng số URL cần xử lý
+total_urls = len(urls)
 
-# Ước tính thời gian trung bình cho mỗi URL (dựa trên wait_time và break_time trung bình)
-avg_wait_time = (15 + 20) / 2  # Trung bình giữa 15 và 20 giây
-avg_break_time = (60 + 180) / 2  # Trung bình giữa 60 và 180 giây
+# Ước tính thời gian trung bình cho mỗi URL
+avg_wait_time = (15 + 20) / 2
+avg_break_time = (60 + 180) / 2
 estimated_time_per_url = avg_wait_time + (avg_break_time / LINKS_PER_BREAK)
 
 for url in urls:
@@ -70,14 +73,14 @@ for url in urls:
         for review in reviews_data['data']:
             rating = review.get('rating', 'N/A')
             content = review.get('content', 'N/A')
-            if(rating != 'N/A' and content != 'N/A' and content.strip() != ''):
+            if rating != 'N/A' and content != 'N/A' and content.strip() != '':
                 cleaned_content = content.replace('\r\n', '. ').replace('\n', '. ').replace('\r', '. ')
                 all_reviews.append({
                     'Sao': rating,
                     'Nội dung': cleaned_content
                 })
-            print(f"- Nội dung: {cleaned_content}")
-            print(f"  Sao: {rating}")
+                print(f"- Nội dung: {cleaned_content}")
+                print(f"  Sao: {rating}")
     else:
         print(f"Không có đánh giá nào cho product_id {product_id} hoặc lỗi API.")
     
@@ -98,7 +101,7 @@ for url in urls:
     
     # Kiểm tra xem có cần nghỉ sau khi xử lý đủ số link không
     if links_processed % LINKS_PER_BREAK == 0 and links_processed < len(urls):
-        break_time = random.uniform(60, 180)  # 1-3 phút (60-180 giây)
+        break_time = random.uniform(60, 180)
         print(f"Đã xử lý {links_processed} link. Nghỉ {break_time/60:.2f} phút...")
         time.sleep(break_time)
 
