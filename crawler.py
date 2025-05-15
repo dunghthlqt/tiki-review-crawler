@@ -20,18 +20,48 @@ def extract_product_id(url):
     return None
 
 def get_reviews(product_id):
-    url = f"https://tiki.vn/api/v2/reviews?product_id={product_id}"
+    base_url = "https://tiki.vn/api/v2/reviews"
     headers = {
         'User-Agent': UserAgent().random,
         'Accept': 'application/json',
     }
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        print(f"Lỗi khi gọi API đánh giá cho product_id {product_id}: {e}")
-        return None
+    params = {
+        'product_id': product_id,
+        'page': 1,
+        'sort': 'score|desc'
+    }
+    
+    session = requests.Session()
+    
+    all_reviews = []
+    
+    while True:
+        try:
+            response = session.get(base_url, headers=headers, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            reviews = data.get('data', [])
+            if not reviews:
+                break
+                
+            all_reviews.extend(reviews)
+            
+            paging = data.get('paging', {})
+            current_page = paging.get('current_page', 1)
+            last_page = paging.get('last_page', 1)
+            
+            if current_page >= last_page:
+                break
+                
+            params['page'] += 1
+            time.sleep(random.uniform(1, 3))
+            
+        except requests.RequestException as e:
+            print(f"Lỗi khi gọi API tại trang {params['page']} cho product_id {product_id}: {e}")
+            break
+    
+    return {'data': all_reviews}
 
 input_file = 'input.csv'
 output_file = 'output.csv'
